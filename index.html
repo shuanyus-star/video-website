@@ -1,337 +1,386 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Video Streaming</title>
+<title>Video Website</title>
 
-  <!-- Cloudinary Video Player -->
-  <link
-    href="https://unpkg.com/cloudinary-video-player@3.0.2/dist/cld-video-player.min.css"
-    rel="stylesheet"
-  >
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <script
-    src="https://unpkg.com/cloudinary-video-player@3.0.2/dist/cld-video-player.min.js">
-  </script>
+<style>
+* {
+  box-sizing: border-box;
+}
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: white;
+  font-family: Arial, sans-serif;
+}
 
-    body {
-      margin: 0;
-      background: #0f0f0f;
-      color: white;
-      font-family: Arial, sans-serif;
-    }
+header {
+  background: #181b21;
+  padding: 18px;
+  text-align: center;
+}
 
-    header {
-      background: #181818;
-      padding: 18px 20px;
-      border-bottom: 1px solid #333;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
+header h1 {
+  margin: 0;
+}
 
-    header h1 {
-      margin: 0;
-      font-size: 22px;
-    }
+.container {
+  max-width: 1000px;
+  margin: auto;
+  padding: 20px;
+}
 
-    .container {
-      max-width: 1100px;
-      margin: auto;
-      padding: 20px;
-    }
+.upload-box {
+  background: #181b21;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 25px;
+}
 
-    .player-box {
-      background: #000;
-      border-radius: 12px;
-      overflow: hidden;
-      margin-bottom: 25px;
-    }
+input,
+textarea,
+button {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background: #101217;
+  color: white;
+}
 
-    #video-player {
-      width: 100%;
-      display: block;
-    }
+textarea {
+  min-height: 80px;
+}
 
-    .video-info {
-      padding: 15px 5px 20px;
-    }
+button {
+  background: #22c55e;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+}
 
-    .video-info h2 {
-      margin: 0 0 8px;
-      font-size: 21px;
-    }
+button:disabled {
+  opacity: 0.5;
+}
 
-    .video-info p {
-      margin: 0;
-      color: #aaa;
-      line-height: 1.5;
-    }
+.status {
+  margin-top: 12px;
+}
 
-    .section-title {
-      font-size: 20px;
-      margin: 25px 0 15px;
-    }
+.video-card {
+  background: #181b21;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 25px;
+}
 
-    .video-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-    }
+.video-card video {
+  width: 100%;
+  display: block;
+  background: black;
+}
 
-    .video-card {
-      background: #181818;
-      border-radius: 10px;
-      overflow: hidden;
-      cursor: pointer;
-      transition: transform 0.2s, background 0.2s;
-    }
+.video-info {
+  padding: 15px;
+}
 
-    .video-card:hover {
-      transform: translateY(-3px);
-      background: #222;
-    }
+.video-info h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
 
-    .thumbnail {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      object-fit: cover;
-      display: block;
-      background: #222;
-    }
-
-    .card-content {
-      padding: 12px;
-    }
-
-    .card-title {
-      font-size: 15px;
-      font-weight: bold;
-      line-height: 1.4;
-    }
-
-    .empty {
-      color: #888;
-      text-align: center;
-      padding: 30px;
-    }
-
-    footer {
-      text-align: center;
-      color: #666;
-      padding: 40px 20px;
-      font-size: 13px;
-    }
-  </style>
+.video-info p {
+  color: #aaa;
+  margin: 0;
+}
+</style>
 </head>
 
 <body>
 
-  <header>
-    <h1>🎬 Video Streaming</h1>
-  </header>
+<header>
+  <h1>🎬 Video Website</h1>
+</header>
 
-  <main class="container">
+<div class="container">
 
-    <!-- VIDEO PLAYER -->
-    <div class="player-box">
-      <video
-        id="video-player"
-        controls
-        playsinline
-      ></video>
-    </div>
+  <div class="upload-box">
+    <h2>Upload Video</h2>
 
-    <!-- VIDEO INFO -->
-    <div class="video-info">
-      <h2 id="video-title">Memuat video...</h2>
-      <p id="video-description">
-        Silakan tunggu sebentar.
-      </p>
-    </div>
+    <input
+      type="text"
+      id="title"
+      placeholder="Judul video"
+    >
 
-    <!-- VIDEO LIST -->
-    <h2 class="section-title">Video Terbaru</h2>
+    <textarea
+      id="description"
+      placeholder="Deskripsi video"
+    ></textarea>
 
-    <div id="video-list" class="video-list"></div>
+    <input
+      type="file"
+      id="videoFile"
+      accept="video/*"
+    >
 
-  </main>
+    <button id="uploadButton">
+      Upload Video
+    </button>
 
-  <footer>
-    © 2026 Video Streaming
-  </footer>
+    <div class="status" id="status"></div>
+  </div>
 
+  <h2>📺 Daftar Video</h2>
 
-  <script>
+  <div id="videoList">
+    Memuat video...
+  </div>
 
-    // ============================
-    // CLOUNDINARY
-    // ============================
+</div>
 
-    const CLOUD_NAME = "t2uovgv8";
+<script>
 
+// ==============================
+// SUPABASE
+// ==============================
 
-    // ============================
-    // DAFTAR VIDEO
-    // ============================
+const SUPABASE_URL = 
+  "https://ozyzecibmuxqceuzrgrt.supabase.co";
 
-    const videos = [
-      {
-        title: "Video Pertama",
-        description: "Video streaming dari Cloudinary.",
-        publicId: "c06sbdxgbqtrb8dcs7jc"
-      }
-    ];
+const SUPABASE_KEY =
+  "sb_publishable_uXyty33hCPRNCC52I84klg_Fdtuy4Pf";
 
+const supabaseClient =
+  window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
 
-    // ============================
-    // PLAYER
-    // ============================
 
-    const player = cloudinary.videoPlayer(
-      "video-player",
-      {
-        cloud_name: CLOUD_NAME,
+// ==============================
+// CLOUDINARY
+// ==============================
 
-        controls: true,
+const CLOUD_NAME = "t2uovgv8";
 
-        fluid: true,
+const UPLOAD_PRESET = "video_upload";
 
-        muted: false,
 
-        autoplay: false
-      }
-    );
+// ==============================
+// ELEMENT
+// ==============================
 
+const uploadButton =
+  document.getElementById("uploadButton");
 
-    // ============================
-    // ELEMENT HTML
-    // ============================
+const status =
+  document.getElementById("status");
 
-    const videoList =
-      document.getElementById("video-list");
 
-    const videoTitle =
-      document.getElementById("video-title");
+// ==============================
+// UPLOAD VIDEO
+// ==============================
 
-    const videoDescription =
-      document.getElementById("video-description");
+uploadButton.addEventListener("click", async () => {
 
+  const title =
+    document.getElementById("title").value.trim();
 
-    // ============================
-    // MEMBUAT DAFTAR VIDEO
-    // ============================
+  const description =
+    document.getElementById("description").value.trim();
 
-    function createVideoList() {
+  const file =
+    document.getElementById("videoFile").files[0];
 
-      videoList.innerHTML = "";
+  if (!title) {
+    alert("Masukkan judul video.");
+    return;
+  }
 
-      videos.forEach((video, index) => {
+  if (!file) {
+    alert("Pilih video terlebih dahulu.");
+    return;
+  }
 
-        const card =
-          document.createElement("div");
+  uploadButton.disabled = true;
 
-        card.className = "video-card";
+  try {
 
+    status.textContent =
+      "⏳ Mengupload video ke Cloudinary...";
 
-        // Thumbnail Cloudinary
-        const thumbnail =
-          document.createElement("img");
+    // Upload ke Cloudinary
+    const formData = new FormData();
 
-        thumbnail.className = "thumbnail";
+    formData.append("file", file);
+    formData.append("upload_preset", UPLOAD_PRESET);
 
-        thumbnail.src =
-          `https://res.cloudinary.com/${CLOUD_NAME}/video/upload/so_0,w_600,h_338,c_fill/${video.publicId}.jpg`;
-
-        thumbnail.alt =
-          video.title;
-
-
-        // Content
-        const content =
-          document.createElement("div");
-
-        content.className =
-          "card-content";
-
-
-        const title =
-          document.createElement("div");
-
-        title.className =
-          "card-title";
-
-        title.textContent =
-          video.title;
-
-
-        content.appendChild(title);
-
-        card.appendChild(thumbnail);
-
-        card.appendChild(content);
-
-
-        // Ketika video dipilih
-        card.addEventListener("click", () => {
-
-          playVideo(video);
-
-          window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-          });
-
-        });
-
-
-        videoList.appendChild(card);
-
-      });
-
-    }
-
-
-    // ============================
-    // MEMUTAR VIDEO
-    // ============================
-
-    function playVideo(video) {
-
-      videoTitle.textContent =
-        video.title;
-
-      videoDescription.textContent =
-        video.description;
-
-
-      // Menggunakan HLS
-      player.source(
-        video.publicId,
+    const cloudinaryResponse =
+      await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`,
         {
-          sourceTypes: ["hls"]
+          method: "POST",
+          body: formData
         }
       );
 
+    if (!cloudinaryResponse.ok) {
+      throw new Error(
+        "Upload Cloudinary gagal."
+      );
     }
 
+    const cloudinaryData =
+      await cloudinaryResponse.json();
 
-    // ============================
-    // MULAI
-    // ============================
+    const publicId =
+      cloudinaryData.public_id;
 
-    createVideoList();
+    status.textContent =
+      "⏳ Menyimpan data video...";
 
-    playVideo(videos[0]);
+    // Simpan data ke Supabase
+    const { error } =
+      await supabaseClient
+        .from("videos")
+        .insert({
+          title: title,
+          description: description,
+          public_id: publicId
+        });
 
-  </script>
+    if (error) {
+      throw error;
+    }
+
+    status.textContent =
+      "✅ Video berhasil diupload!";
+
+    document.getElementById("title").value = "";
+    document.getElementById("description").value = "";
+    document.getElementById("videoFile").value = "";
+
+    loadVideos();
+
+  } catch (error) {
+
+    console.error(error);
+
+    status.textContent =
+      "❌ Terjadi kesalahan: " +
+      error.message;
+
+  }
+
+  uploadButton.disabled = false;
+
+});
+
+
+// ==============================
+// LOAD VIDEOS
+// ==============================
+
+async function loadVideos() {
+
+  const videoList =
+    document.getElementById("videoList");
+
+  const { data, error } =
+    await supabaseClient
+      .from("videos")
+      .select("*")
+      .order("created_at", {
+        ascending: false
+      });
+
+  if (error) {
+
+    videoList.innerHTML =
+      "<p>Gagal mengambil video.</p>";
+
+    console.error(error);
+
+    return;
+  }
+
+  if (!data || data.length === 0) {
+
+    videoList.innerHTML =
+      "<p>Belum ada video.</p>";
+
+    return;
+  }
+
+  videoList.innerHTML = "";
+
+  data.forEach(video => {
+
+    const videoUrl =
+      `https://res.cloudinary.com/${CLOUD_NAME}/video/upload/${video.public_id}.mp4`;
+
+    const card =
+      document.createElement("div");
+
+    card.className = "video-card";
+
+    card.innerHTML = `
+
+      <video
+        controls
+        preload="metadata"
+        playsinline
+        src="${videoUrl}">
+      </video>
+
+      <div class="video-info">
+
+        <h2>${escapeHtml(video.title)}</h2>
+
+        <p>
+          ${escapeHtml(video.description || "")}
+        </p>
+
+      </div>
+    `;
+
+    videoList.appendChild(card);
+
+  });
+
+}
+
+
+// ==============================
+// SECURITY: ESCAPE HTML
+// ==============================
+
+function escapeHtml(text) {
+
+  const div =
+    document.createElement("div");
+
+  div.textContent = text;
+
+  return div.innerHTML;
+}
+
+
+// ==============================
+// START
+// ==============================
+
+loadVideos();
+
+</script>
 
 </body>
 </html>
