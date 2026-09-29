@@ -24,10 +24,14 @@ header {
   background: #181b21;
   padding: 18px;
   text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 header h1 {
   margin: 0;
+  font-size: 24px;
 }
 
 .container {
@@ -39,7 +43,7 @@ header h1 {
 .upload-box {
   background: #181b21;
   padding: 20px;
-  border-radius: 12px;
+  border-radius: 14px;
   margin-bottom: 25px;
 }
 
@@ -48,7 +52,7 @@ textarea,
 button {
   width: 100%;
   margin-top: 10px;
-  padding: 12px;
+  padding: 13px;
   border-radius: 8px;
   border: 1px solid #333;
   background: #101217;
@@ -74,17 +78,39 @@ button:disabled {
   margin-top: 12px;
 }
 
+.search {
+  margin-bottom: 20px;
+}
+
+.search input {
+  font-size: 16px;
+}
+
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
 .video-card {
   background: #181b21;
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
-  margin-bottom: 25px;
 }
 
 .video-card video {
   width: 100%;
   display: block;
   background: black;
+  aspect-ratio: 16 / 9;
+}
+
+.thumbnail {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+  background: #222;
 }
 
 .video-info {
@@ -93,12 +119,29 @@ button:disabled {
 
 .video-info h2 {
   margin: 0 0 8px;
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .video-info p {
   color: #aaa;
   margin: 0;
+  line-height: 1.5;
+}
+
+.play-button {
+  background: #22c55e;
+  border: none;
+  margin-top: 12px;
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 12px;
+  }
+
+  .video-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
 </head>
@@ -112,7 +155,7 @@ button:disabled {
 <div class="container">
 
   <div class="upload-box">
-    <h2>Upload Video</h2>
+    <h2>📤 Upload Video</h2>
 
     <input
       type="text"
@@ -140,6 +183,14 @@ button:disabled {
 
   <h2>📺 Daftar Video</h2>
 
+  <div class="search">
+    <input
+      type="text"
+      id="searchInput"
+      placeholder="🔍 Cari video..."
+    >
+  </div>
+
   <div id="videoList">
     Memuat video...
   </div>
@@ -152,17 +203,17 @@ button:disabled {
 // SUPABASE
 // ==============================
 
-const SUPABASE_URL = 
-  "https://ozyzecibmuxqceuzrgrt.supabase.co";
+const SUPABASE_URL =
+"https://ozyzecibmuxqceuzrgrt.supabase.co";
 
 const SUPABASE_KEY =
-  "sb_publishable_uXyty33hCPRNCC52I84klg_Fdtuy4Pf";
+"sb_publishable_uXyty33hCPRNCC52I84klg_Fdtuy4Pf";
 
 const supabaseClient =
-  window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
-  );
+window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
 
 
 // ==============================
@@ -179,10 +230,15 @@ const UPLOAD_PRESET = "video_upload";
 // ==============================
 
 const uploadButton =
-  document.getElementById("uploadButton");
+document.getElementById("uploadButton");
 
 const status =
-  document.getElementById("status");
+document.getElementById("status");
+
+const searchInput =
+document.getElementById("searchInput");
+
+let allVideos = [];
 
 
 // ==============================
@@ -215,15 +271,18 @@ uploadButton.addEventListener("click", async () => {
   try {
 
     status.textContent =
-      "⏳ Mengupload video ke Cloudinary...";
+      "⏳ Mengupload video...";
 
-    // Upload ke Cloudinary
     const formData = new FormData();
 
     formData.append("file", file);
-    formData.append("upload_preset", UPLOAD_PRESET);
 
-    const cloudinaryResponse =
+    formData.append(
+      "upload_preset",
+      UPLOAD_PRESET
+    );
+
+    const response =
       await fetch(
         `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`,
         {
@@ -232,14 +291,14 @@ uploadButton.addEventListener("click", async () => {
         }
       );
 
-    if (!cloudinaryResponse.ok) {
+    if (!response.ok) {
       throw new Error(
         "Upload Cloudinary gagal."
       );
     }
 
     const cloudinaryData =
-      await cloudinaryResponse.json();
+      await response.json();
 
     const publicId =
       cloudinaryData.public_id;
@@ -247,25 +306,29 @@ uploadButton.addEventListener("click", async () => {
     status.textContent =
       "⏳ Menyimpan data video...";
 
-    // Simpan data ke Supabase
+
     const { error } =
       await supabaseClient
-        .from("videos")
-        .insert({
-          title: title,
-          description: description,
-          public_id: publicId
-        });
+      .from("videos")
+      .insert({
+        title: title,
+        description: description,
+        public_id: publicId
+      });
+
 
     if (error) {
       throw error;
     }
 
+
     status.textContent =
       "✅ Video berhasil diupload!";
 
     document.getElementById("title").value = "";
+
     document.getElementById("description").value = "";
+
     document.getElementById("videoFile").value = "";
 
     loadVideos();
@@ -294,13 +357,15 @@ async function loadVideos() {
   const videoList =
     document.getElementById("videoList");
 
+
   const { data, error } =
     await supabaseClient
-      .from("videos")
-      .select("*")
-      .order("created_at", {
-        ascending: false
-      });
+    .from("videos")
+    .select("*")
+    .order("created_at", {
+      ascending: false
+    });
+
 
   if (error) {
 
@@ -312,47 +377,119 @@ async function loadVideos() {
     return;
   }
 
-  if (!data || data.length === 0) {
+
+  allVideos = data || [];
+
+  showVideos(allVideos);
+}
+
+
+// ==============================
+// SHOW VIDEOS
+// ==============================
+
+function showVideos(videos) {
+
+  const videoList =
+    document.getElementById("videoList");
+
+
+  if (!videos.length) {
 
     videoList.innerHTML =
-      "<p>Belum ada video.</p>";
+      "<p>Video tidak ditemukan.</p>";
 
     return;
   }
 
-  videoList.innerHTML = "";
 
-  data.forEach(video => {
+  videoList.innerHTML =
+    '<div class="video-grid"></div>';
+
+  const grid =
+    videoList.querySelector(".video-grid");
+
+
+  videos.forEach(video => {
 
     const videoUrl =
       `https://res.cloudinary.com/${CLOUD_NAME}/video/upload/${video.public_id}.mp4`;
 
+
+    const thumbnailUrl =
+      `https://res.cloudinary.com/${CLOUD_NAME}/video/upload/so_0,w_640,h_360,c_fill/${video.public_id}.jpg`;
+
+
     const card =
       document.createElement("div");
 
-    card.className = "video-card";
+    card.className =
+      "video-card";
+
 
     card.innerHTML = `
 
-      <video
-        controls
-        preload="metadata"
-        playsinline
-        src="${videoUrl}">
-      </video>
+      <img
+        class="thumbnail"
+        src="${thumbnailUrl}"
+        alt="${escapeHtml(video.title)}"
+      >
 
       <div class="video-info">
 
-        <h2>${escapeHtml(video.title)}</h2>
+        <h2>
+          ${escapeHtml(video.title)}
+        </h2>
 
         <p>
           ${escapeHtml(video.description || "")}
         </p>
 
+        <button class="play-button">
+          ▶ Putar Video
+        </button>
+
       </div>
     `;
 
-    videoList.appendChild(card);
+
+    const playButton =
+      card.querySelector(".play-button");
+
+
+    playButton.addEventListener(
+      "click",
+      () => {
+
+        const player =
+          document.createElement("video");
+
+        player.controls = true;
+
+        player.autoplay = true;
+
+        player.playsInline = true;
+
+        player.src = videoUrl;
+
+        player.style.width = "100%";
+
+        player.style.aspectRatio = "16 / 9";
+
+        player.style.background = "black";
+
+
+        card.insertBefore(
+          player,
+          card.querySelector(".video-info")
+        );
+
+        playButton.remove();
+      }
+    );
+
+
+    grid.appendChild(card);
 
   });
 
@@ -360,7 +497,47 @@ async function loadVideos() {
 
 
 // ==============================
-// SECURITY: ESCAPE HTML
+// SEARCH
+// ==============================
+
+searchInput.addEventListener(
+  "input",
+  () => {
+
+    const keyword =
+      searchInput.value
+      .toLowerCase()
+      .trim();
+
+
+    const filtered =
+      allVideos.filter(video => {
+
+        const title =
+          (video.title || "")
+          .toLowerCase();
+
+        const description =
+          (video.description || "")
+          .toLowerCase();
+
+
+        return (
+          title.includes(keyword) ||
+          description.includes(keyword)
+        );
+
+      });
+
+
+    showVideos(filtered);
+
+  }
+);
+
+
+// ==============================
+// SECURITY
 // ==============================
 
 function escapeHtml(text) {
