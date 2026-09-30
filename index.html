@@ -273,23 +273,39 @@ uploadButton.addEventListener("click", async () => {
     status.textContent =
       "⏳ Mengupload video...";
 
-    const formData = new FormData();
+    const signResponse = await fetch(
+  "https://ozyzecibmuxqceuzrgrt.supabase.co/functions/v1/rapid-processor",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({})
+  }
+);
 
-    formData.append("file", file);
+if (!signResponse.ok) {
+  throw new Error("Gagal mendapatkan signature.");
+}
 
-    formData.append(
-      "upload_preset",
-      UPLOAD_PRESET
-    );
+const signedData = await signResponse.json();
 
-    const response =
-      await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`,
-        {
-          method: "POST",
-          body: formData
-        }
-      );
+const formData = new FormData();
+
+formData.append("file", file);
+formData.append("api_key", "362968656978675");
+formData.append("upload_preset", signedData.upload_preset);
+formData.append("timestamp", signedData.timestamp);
+formData.append("signature", signedData.signature);
+
+const response = await fetch(
+  `https://api.cloudinary.com/v1_1/${signedData.cloud_name}/video/upload`,
+  {
+    method: "POST",
+    body: formData
+  }
+);
+     
 
     if (!response.ok) {
       throw new Error(
